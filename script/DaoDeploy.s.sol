@@ -14,8 +14,8 @@ contract DaoScript is Script {
         address governanceTokenAddress = vm.envAddress("GOVERNANCE_TOKEN_ADDRESS");
 
         vm.startBroadcast(pk);
-        uint threeMin = 3 * 60 * 1000;
-         dao =  new DaoContract(governanceTokenAddress, threeMin);
+        uint threeMin = 3 * 60;
+        dao = new DaoContract(governanceTokenAddress, threeMin);
 //        uint proposalId = dao.createProposal("First Proposal");
 //        dao.executeProposal(proposalId);
 
