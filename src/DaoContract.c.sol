@@ -16,12 +16,14 @@ contract DaoContract is Ownable {
 
     event ProposalCreated(uint256 indexed id, address indexed creator, string description);
     event ProposalExecuted(uint256 indexed id, address indexed executor);
+    event ProposalFinalized(uint256 indexed id, address indexed finalizer);
     event Voted(uint256 indexed id, address indexed voter, bool support, uint256 weight);
 
     struct Proposal {
         uint256 id;
         string description;
         bool executed;
+        bool finalized;
         uint256 forVotes;
         uint256 againstVotes;
         uint256 createdAt;
@@ -41,6 +43,7 @@ contract DaoContract is Ownable {
             id: proposalCount,
             description: _description,
             executed: false,
+            finalized: false,
             forVotes: 0,
             againstVotes: 0,
             createdAt: block.timestamp
@@ -54,6 +57,7 @@ contract DaoContract is Ownable {
         Proposal storage proposal = proposals[_id];
         require(proposal.id != 0, "Proposal does not exist");
         require(!proposal.executed, "Proposal already executed");
+        require(!proposal.finalized, "Proposal already finalized");
         require(!hasVoted[_id][msg.sender], "Already voted");
 
         uint256 weight = governanceToken.balanceOf(msg.sender);
@@ -70,6 +74,17 @@ contract DaoContract is Ownable {
         emit Voted(_id, msg.sender, _support, weight);
     }
 
+    function finalizeProposal(uint256 _id) public onlyOwner {
+        Proposal storage proposal = proposals[_id];
+        require(proposal.id != 0, "Proposal does not exist");
+        require(!proposal.finalized, "Proposal already finalized");
+        require(!proposal.executed, "Proposal already executed");
+        require(block.timestamp >= proposal.createdAt + voteDuration, "Voting window active");
+
+        proposal.finalized = true;
+        emit ProposalFinalized(_id, msg.sender);
+    }
+
     function executeProposal(uint256 _id) public onlyOwner {
         Proposal storage proposal = proposals[_id];
         require(proposal.id != 0, "Proposal does not exist");
@@ -79,6 +94,7 @@ contract DaoContract is Ownable {
 
         require(block.timestamp >= proposal.createdAt + voteDuration, "Voting window active");
         proposal.executed = true;
+        proposal.finalized = true;
 
         emit ProposalExecuted(_id, msg.sender);
     }
